@@ -204,6 +204,7 @@ logger = logging.getLogger(__name__)
 def submit_missing_person(request):
     try:
         name               = request.data.get('name') or request.POST.get('name', '').strip()
+        student_id_val     = request.data.get('studentId') or request.POST.get('studentId', '').strip()
         dress_code         = request.data.get('dressCode') or request.POST.get('dressCode', '').strip()
         department         = request.data.get('department') or request.POST.get('department', '').strip()
         is_outsider_raw    = request.data.get('isOutsider') or request.POST.get('isOutsider', 'false')
@@ -218,13 +219,15 @@ def submit_missing_person(request):
             return Response({'error': 'Email is required'}, status=400)
 
         mp = MissingPerson.objects.create(
-            name=name, dress_code=dress_code, department=department,
-            is_outsider=is_outsider, last_seen_location=last_seen_location,
+            name=name, student_id=student_id_val, dress_code=dress_code,
+            department=department, is_outsider=is_outsider,
+            last_seen_location=last_seen_location,
             email=submitter_email, photo=photo, status='Pending Investigation',
         )
         return Response({
             'reference_id':       str(mp.reference_id),
             'name':               mp.name,
+            'student_id':         mp.student_id,
             'department':         mp.department,
             'dress_code':         mp.dress_code,
             'last_seen_location': mp.last_seen_location,
@@ -254,7 +257,8 @@ def check_status(request, reference_id):
             'confidence': float(d.confidence_score),
             'latitude':   d.latitude,
             'longitude':  d.longitude,
-            'frame':      request.build_absolute_uri(d.detected_face.url) if d.detected_face else None,
+            'snapshot':   request.build_absolute_uri(d.detected_face.url) if d.detected_face else None,
+            'face_crop':  request.build_absolute_uri(d.face_crop.url) if d.face_crop else None,
         } for d in detections]
 
         return Response({
@@ -282,6 +286,7 @@ def admin_dashboard_stats(request):
             return {
                 'reference_id':       str(mp.reference_id),
                 'name':               mp.name,
+                'student_id':         mp.student_id,
                 'department':         mp.department,
                 'status':             mp.status,
                 'is_outsider':        mp.is_outsider,
@@ -317,6 +322,7 @@ def admin_get_reports(request):
         data = [{
             'reference_id':       str(mp.reference_id),
             'name':               mp.name,
+            'student_id':         mp.student_id,
             'department':         mp.department,
             'status':             mp.status,
             'is_outsider':        mp.is_outsider,
@@ -499,10 +505,10 @@ def admin_run_detection(request, reference_id=None):
 
         for cctv in videos:
             try:
-                from .services.detection_service import detect_person_in_video
+                from ai_pipeline.detection_service import detect_person_in_video
                 matches = detect_person_in_video(mp, cctv)
             except ImportError:
-                logger.error("detection_service not found — create api/services/detection_service.py")
+                logger.error("ai_pipeline.detection_service not found")
                 matches = []
             except Exception as de:
                 logger.error(f"Detection service error for video {cctv.id}: {de}")
@@ -510,14 +516,22 @@ def admin_run_detection(request, reference_id=None):
 
             for match in matches:
                 try:
-                    # Build timestamp
                     ts = datetime.datetime.now()
                     if cctv.uploaded_at:
                         ts = cctv.uploaded_at + datetime.timedelta(
                             seconds=match.get('timestamp_seconds', 0)
                         )
 
-                    # Create Detection record using exact model fields
+                    # Link matched student if pipeline identified one
+                    matched_sid = match.get('matched_student_id')
+                    if matched_sid and not mp.matched_student:
+                        from .models import Student as StudentModel
+                        try:
+                            mp.matched_student = StudentModel.objects.get(student_id=matched_sid)
+                            mp.save()
+                        except StudentModel.DoesNotExist:
+                            pass
+
                     det = Detection.objects.create(
                         missing_person=mp,
                         cctv_video=cctv,
@@ -530,22 +544,31 @@ def admin_run_detection(request, reference_id=None):
                         longitude=cctv.longitude,
                     )
 
-                    # Save matched frame image if available
+                    # Save annotated frame snapshot
+                    from django.conf import settings as _s
                     frame_path = match.get('frame_path')
-                    if frame_path:
-                        from django.conf import settings
-                        full_path = os.path.join(settings.MEDIA_ROOT, frame_path)
-                        if os.path.exists(full_path):
-                            det.detected_face.name = frame_path
-                            det.save()
+                    if frame_path and os.path.exists(os.path.join(_s.MEDIA_ROOT, frame_path)):
+                        det.detected_face.name = frame_path
+                        det.save()
+
+                    # Save face crop
+                    face_path = match.get('face_path')
+                    if face_path and os.path.exists(os.path.join(_s.MEDIA_ROOT, face_path)):
+                        det.face_crop.name = face_path
+                        det.save()
 
                     detection_results.append({
-                        'location':   cctv.location,
-                        'confidence': match.get('confidence', 0),
-                        'timestamp':  ts.isoformat(),
-                        'video_id':   cctv.id,
-                        'latitude':   cctv.latitude,
-                        'longitude':  cctv.longitude,
+                        'location':         cctv.location,
+                        'confidence':       match.get('confidence', 0),
+                        'timestamp':        ts.isoformat(),
+                        'video_id':         cctv.id,
+                        'latitude':         cctv.latitude,
+                        'longitude':        cctv.longitude,
+                        'matched_person':   match.get('matched_person', ''),
+                        'sighting_number':  match.get('sighting_number', 0),
+                        'total_sightings':  match.get('total_sightings', 0),
+                        'snapshot':         request.build_absolute_uri(det.detected_face.url) if det.detected_face else None,
+                        'face_crop':        request.build_absolute_uri(det.face_crop.url) if det.face_crop else None,
                     })
                     total_matches += 1
 
@@ -556,7 +579,17 @@ def admin_run_detection(request, reference_id=None):
         if total_matches > 0:
             mp.status = 'Detected'
             mp.save()
-            message = f'✅ Person FOUND in {total_matches} location(s)!'
+            # Build a meaningful summary
+            sighting_summary = ''
+            if detection_results:
+                first = detection_results[0]
+                total_s = first.get('total_sightings', total_matches)
+                person_name = first.get('matched_person', mp.name)
+                sighting_summary = (
+                    f' Identified as "{person_name}", '
+                    f'spotted in {total_s} frame(s).'
+                )
+            message = f'Person FOUND!{sighting_summary}'
         else:
             mp.status = 'Processing'
             mp.save()
@@ -567,6 +600,11 @@ def admin_run_detection(request, reference_id=None):
             'status':           mp.status,
             'person':           mp.name,
             'reference_id':     str(mp.reference_id),
+            'matched_student':  {
+                'student_id': mp.matched_student.student_id,
+                'full_name':  mp.matched_student.full_name,
+                'department': mp.matched_student.department,
+            } if mp.matched_student else None,
             'detections_count': total_matches,
             'detections':       detection_results,
         })
@@ -596,6 +634,7 @@ def admin_get_detections(request):
             'timestamp':     d.timestamp.isoformat() if d.timestamp else None,
             'created_at':    d.created_at.isoformat() if d.created_at else None,
             'frame':         d.detected_face.url if d.detected_face else None,
+            'face_crop':     d.face_crop.url if d.face_crop else None,
         } for d in detections]
         return Response(data)
     except Exception as e:

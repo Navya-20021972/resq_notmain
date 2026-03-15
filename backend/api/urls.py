@@ -59,23 +59,9 @@ urlpatterns = [
     path("admin/get-cctv-videos/",                              admin_get_cctv_videos),
 
     # ===== DETECTION =====
-    # ===== DETECTION =====
-# ===== DETECTION =====
-path(
-    "admin/process-detection/<uuid:reference_id>/",
-    admin_run_detection
-),
-
-path(
-    "admin/run-detection/<uuid:reference_id>/",
-    admin_run_detection
-),
-
-path(
-    "admin/detections/",
-    admin_get_detections
-),
-
+    path("admin/process-detection/<uuid:reference_id>/", admin_run_detection),
+    path("admin/run-detection/<uuid:reference_id>/", admin_run_detection),
+    path("admin/detections/", admin_get_detections),
 
     # ===== VIEWSETS =====
     path("", include(router.urls)),

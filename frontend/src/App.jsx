@@ -116,6 +116,18 @@ function SubmitView({ formData, setFormData, onSubmit, onEmailSearch, onViewDeta
                 onFocus={focus} onBlur={blur}
               />
             </Field>
+            <Field label={formData.isOutsider ? "STUDENT / ADMISSION NO. (N/A)" : "STUDENT / ADMISSION NO. *"}>
+              <input
+                type="text" value={formData.studentId} onChange={handleField("studentId")}
+                required={!formData.isOutsider} disabled={formData.isOutsider}
+                placeholder={formData.isOutsider ? "Not applicable" : "e.g. ann, div, nav, ish"}
+                style={{ ...S.inputEl, opacity: formData.isOutsider ? 0.5 : 1, cursor: formData.isOutsider ? "not-allowed" : "text" }}
+                onFocus={focus} onBlur={blur}
+              />
+            </Field>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <Field label={`DEPARTMENT${formData.isOutsider ? " (N/A)" : " *"}`}>
               <select
                 value={formData.department} onChange={handleField("department")}
@@ -311,9 +323,9 @@ function DetailsView({ submittedData, statusData, onCheckStatus, onBack, loading
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "22px" }}>
             {[
               ["NAME",         d.name,                                  false],
+              ["STUDENT ID",   d.student_id || (d.is_outsider ? "Outsider" : "—"), false],
               ["DEPARTMENT",   d.department || "Outsider",              false],
               ["CASE STATUS",  d.status || "Processing",                false],
-              ["PERSON TYPE",  d.is_outsider ? "Outsider" : "Student",  false],
               ["LAST SEEN",    d.last_seen_location,                    true],
               ["DRESS CODE",   d.dress_code,                            true],
               ["EMAIL",        d.email || d.submitter_email,            true],
@@ -338,10 +350,26 @@ function DetailsView({ submittedData, statusData, onCheckStatus, onBack, loading
               </div>
               {statusData.message && <p style={{ margin: "0 0 10px", color: C.textSub, fontSize: "13px" }}>{statusData.message}</p>}
               {statusData.detected_locations?.map((loc, i) => (
-                <div key={i} style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 14px", marginBottom: "6px" }}>
+                <div key={i} style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 14px", marginBottom: "10px" }}>
                   <p style={{ margin: "0 0 2px", color: "#15803d", fontWeight: "700", fontSize: "13px" }}>📍 {loc.location}</p>
                   <p style={{ margin: "0 0 2px", color: C.muted, fontSize: "12px" }}>🕒 {new Date(loc.timestamp).toLocaleString()}</p>
-                  <p style={{ margin: 0, color: C.muted, fontSize: "12px" }}>Confidence: {(loc.confidence * 100).toFixed(1)}%</p>
+                  <p style={{ margin: "0 0 8px", color: C.muted, fontSize: "12px" }}>Confidence: {(loc.confidence * 100).toFixed(1)}%</p>
+                  {(loc.snapshot || loc.face_crop) && (
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {loc.face_crop && (
+                        <div style={{ flex: "0 0 auto" }}>
+                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>FACE DETECTED</p>
+                          <img src={loc.face_crop} alt="Face crop" style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "2px solid #f59e0b" }} />
+                        </div>
+                      )}
+                      {loc.snapshot && (
+                        <div style={{ flex: 1, minWidth: "150px" }}>
+                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>CCTV FRAME</p>
+                          <img src={loc.snapshot} alt="CCTV snapshot" style={{ width: "100%", maxHeight: "180px", objectFit: "contain", borderRadius: "8px", border: "2px solid #22c55e", background: "#f1f5f9" }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -357,7 +385,7 @@ function DetailsView({ submittedData, statusData, onCheckStatus, onBack, loading
 // ── MAIN APP ───────────────────────────────────────────────
 export default function App() {
   const [view, setView]           = useState("submit");
-  const [formData, setFormData]   = useState({ name: "", dressCode: "", department: "", isOutsider: false, lastSeenLocation: "", submitterEmail: "", photo: null, photoPreview: null });
+  const [formData, setFormData]   = useState({ name: "", studentId: "", dressCode: "", department: "", isOutsider: false, lastSeenLocation: "", submitterEmail: "", photo: null, photoPreview: null });
   const [searchEmail, setSearchEmail] = useState("");
   const [searchRefId, setSearchRefId] = useState("");
   const [submittedData, setSubmittedData] = useState(null);
@@ -369,6 +397,7 @@ export default function App() {
     e.preventDefault(); setLoading(true); setError("");
     const fd = new FormData();
     fd.append("name",             formData.name);
+    fd.append("studentId",        formData.studentId);
     fd.append("dressCode",        formData.dressCode);
     fd.append("department",       formData.department);
     fd.append("isOutsider",       formData.isOutsider ? "true" : "false");

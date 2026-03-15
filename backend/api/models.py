@@ -21,12 +21,21 @@ class MissingPerson(models.Model):
     )
 
     name = models.CharField(max_length=100)
-    department = models.CharField(max_length=100, blank=True)  # Added blank=True
+    student_id = models.CharField(max_length=50, blank=True, default='',
+        help_text="Student/Admission ID — must match a student_database folder name")
+    department = models.CharField(max_length=100, blank=True)
     dress_code = models.CharField(max_length=200)
     last_seen_location = models.CharField(max_length=200)
 
     is_outsider = models.BooleanField(default=False)
     photo = models.ImageField(upload_to="missing_persons/")
+
+    matched_student = models.ForeignKey(
+        'Student',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='missing_reports',
+    )
 
     email = models.EmailField()
     status = models.CharField(
@@ -75,8 +84,8 @@ class Detection(models.Model):
     )
 
     detected_face = models.ImageField(upload_to="detected_faces/")
+    face_crop = models.ImageField(upload_to="detected_faces/", null=True, blank=True)
 
-    # 🔹 Face recognition results
     confidence_score = models.FloatField(default=0)
     is_match = models.BooleanField(default=False)
 

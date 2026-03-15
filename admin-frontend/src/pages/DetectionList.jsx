@@ -392,9 +392,35 @@ export default function DetectionList() {
                       <p style={{ margin: "0 0 10px", color: "#93c5fd", fontSize: "12px", fontWeight: "700" }}>DETECTION LOCATIONS:</p>
                       {processResult.detections.map((d, i) => (
                         <div key={i} style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "8px", padding: "10px 14px", marginBottom: "8px" }}>
-                          <p style={{ margin: "0 0 3px", color: "#4ade80", fontWeight: "700", fontSize: "14px" }}>📍 {d.location}</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <p style={{ margin: 0, color: "#4ade80", fontWeight: "700", fontSize: "14px" }}>📍 {d.location}</p>
+                            {d.total_sightings > 0 && (
+                              <span style={{ padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "700", background: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                                Sighting {d.sighting_number}/{d.total_sightings}
+                              </span>
+                            )}
+                          </div>
+                          {d.matched_person && (
+                            <p style={{ margin: "0 0 3px", color: "#34d399", fontSize: "13px", fontWeight: "600" }}>👤 Matched: {d.matched_person}</p>
+                          )}
                           <p style={{ margin: "0 0 3px", color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>🕒 {d.timestamp ? new Date(d.timestamp).toLocaleString() : "—"}</p>
-                          <p style={{ margin: 0, color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>Confidence: {(d.confidence * 100).toFixed(1)}%</p>
+                          <p style={{ margin: "0 0 8px", color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>Confidence: {(d.confidence * 100).toFixed(1)}%</p>
+                          {(d.snapshot || d.face_crop) && (
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                              {d.face_crop && (
+                                <div style={{ flex: "0 0 auto" }}>
+                                  <p style={{ margin: "0 0 4px", color: "rgba(255,255,255,0.3)", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>FACE DETECTED</p>
+                                  <img src={d.face_crop} alt="Face" style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "8px", border: "2px solid #f59e0b", background: "rgba(0,0,0,0.3)" }} />
+                                </div>
+                              )}
+                              {d.snapshot && (
+                                <div style={{ flex: 1, minWidth: "120px" }}>
+                                  <p style={{ margin: "0 0 4px", color: "rgba(255,255,255,0.3)", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>CCTV FRAME</p>
+                                  <img src={d.snapshot} alt="CCTV" style={{ width: "100%", maxHeight: "160px", objectFit: "contain", borderRadius: "8px", border: "2px solid #4ade80", background: "rgba(0,0,0,0.3)" }} />
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -411,11 +437,11 @@ export default function DetectionList() {
               <div style={{ marginTop: "20px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <p style={{ margin: "0 0 10px", fontWeight: "600", fontSize: "14px", color: "rgba(255,255,255,0.7)" }}>How it works:</p>
                 {[
-                  "YOLOv8 detects all persons in CCTV frames",
-                  "DeepFace + RetinaFace extracts face encodings",
-                  "Compares against the missing person's photo",
-                  "Records location & timestamp of each match",
-                  "Results available via Reference ID lookup"
+                  "GA selects 10 most diverse keyframes from CCTV video",
+                  "YOLOv8 (best.pt) detects faces in each keyframe",
+                  "ArcFace extracts embeddings from detected faces",
+                  "Compares against ALL student database photos",
+                  "Identifies the missing person & returns all sightings",
                 ].map((step, i) => (
                   <p key={i} style={{ margin: "0 0 6px", color: "rgba(255,255,255,0.4)", fontSize: "13px" }}>
                     <span style={{ color: "#3b82f6", marginRight: "8px" }}>▸</span>{step}
@@ -459,6 +485,7 @@ export default function DetectionList() {
               </div>
               {[
                 ["Name",          detailModal.name],
+                ["Student ID",    detailModal.student_id || (detailModal.is_outsider ? "Outsider" : "—")],
                 ["Department",    detailModal.department || "Outsider"],
                 ["Dress Code",    detailModal.dress_code],
                 ["Last Seen",     detailModal.last_seen_location],
