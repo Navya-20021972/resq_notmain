@@ -1,6 +1,25 @@
 import { useState } from "react";
+import { CAMPUS_LOCATIONS } from "./config/locations";
 
 const API = "http://localhost:8000/api";
+
+// Add placeholder styling for dark theme
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    input::placeholder, textarea::placeholder, select > option:not([value]) {
+      color: #64748b !important;
+    }
+    input, textarea, select {
+      color-scheme: dark;
+    }
+    select > option {
+      background-color: #1e293b;
+      color: #e0e7ff;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // ── Design tokens ──────────────────────────────────────────
 const C = {
@@ -8,49 +27,50 @@ const C = {
   navyMid: "#0f2040",
   blue:    "#1a56db",
   teal:    "#0891b2",
-  text:    "#0f172a",
-  textSub: "#475569",
-  muted:   "#64748b",
-  border:  "#e2e8f0",
-  slate:   "#f8fafc",
+  text:    "#ffffff",
+  textSub: "#cbd5e1",
+  muted:   "#94a3b8",
+  border:  "rgba(26,86,219,0.2)",
+  slate:   "#1e293b",
 };
 
 const S = {
   inputEl: {
-    width: "100%", padding: "11px 14px",
-    background: "#f8fafc", border: "1px solid #e2e8f0",
-    borderRadius: "8px", color: C.text, fontSize: "14px",
+    width: "100%", padding: "12px 16px",
+    background: "rgba(30, 41, 59, 0.7)", border: "1px solid rgba(26,86,219,0.2)",
+    borderRadius: "8px", color: "#ffffff", fontSize: "14px",
     outline: "none", boxSizing: "border-box",
-    fontFamily: "inherit", transition: "border-color 0.15s, box-shadow 0.15s",
+    fontFamily: "inherit", transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
   },
   label: {
-    display: "block", color: "#334155", fontSize: "12px",
-    fontWeight: "700", marginBottom: "6px", letterSpacing: "0.06em",
+    display: "block", color: "#e0e7ff", fontSize: "12px",
+    fontWeight: "700", marginBottom: "8px", letterSpacing: "0.08em",
   },
   card: {
-    background: "#ffffff", borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.04)",
+    background: "rgba(15, 32, 64, 0.8)", borderRadius: "12px",
+    border: "1px solid rgba(26,86,219,0.2)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
     overflow: "hidden",
   },
   btn: {
-    width: "100%", padding: "13px 20px",
-    background: `linear-gradient(135deg, #1a56db, #0891b2)`,
+    width: "100%", padding: "14px 24px",
+    background: `linear-gradient(135deg, #ff6464, #ff8a80)`,
     border: "none", borderRadius: "8px", color: "#fff",
     fontWeight: "700", fontSize: "14px", cursor: "pointer",
-    fontFamily: "inherit", boxShadow: "0 2px 8px rgba(26,86,219,0.3)",
+    fontFamily: "inherit", boxShadow: "0 8px 24px rgba(255,100,100,0.3)", transition: "all 0.2s",
   },
   btnOutline: {
-    width: "100%", padding: "11px 20px",
-    background: "transparent", border: "1px solid #e2e8f0",
-    borderRadius: "8px", color: C.textSub,
+    width: "100%", padding: "12px 20px",
+    background: "transparent", border: "1.5px solid rgba(26,86,219,0.5)",
+    borderRadius: "8px", color: "#e0e7ff",
     fontWeight: "600", fontSize: "13px", cursor: "pointer",
-    fontFamily: "inherit",
+    fontFamily: "inherit", transition: "all 0.2s",
   },
 };
 
-const focus = (e) => { e.target.style.borderColor = C.blue; e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.08)"; };
-const blur  = (e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; };
+const focus = (e) => { e.target.style.borderColor = "rgba(26,86,219,0.6)"; e.target.style.background = "rgba(30, 41, 59, 0.9)"; e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.15)"; };
+const blur  = (e) => { e.target.style.borderColor = "rgba(26,86,219,0.2)"; e.target.style.background = "rgba(30, 41, 59, 0.7)"; e.target.style.boxShadow = "none"; };
 
 const Field = ({ label, children }) => (
   <div style={{ marginBottom: "16px" }}>
@@ -58,6 +78,139 @@ const Field = ({ label, children }) => (
     {children}
   </div>
 );
+
+// ── HOME VIEW ────────────────────────────────────────────
+function HomeView({ onFileReport }) {
+  return (
+    <div style={{ minHeight: "100vh", background: "#0a1628", position: "relative" }}>
+      {/* Animated background elements */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", zIndex: 0
+      }}></div>
+
+      {/* Hero Section */}
+      <div style={{
+        minHeight: "600px", display: "flex", alignItems: "center", justifyContent: "center",
+        textAlign: "center", padding: "40px 20px", position: "relative", backgroundSize: "cover",
+        backgroundPosition: "center", backgroundAttachment: "fixed",
+        backgroundImage: "url('/hero-bg.png')", zIndex: 2
+      }}>
+        {/* Dark Overlay with Blur */}
+        <div style={{
+          position: "absolute", inset: 0, background: "rgba(0, 0, 0, 0.7)",
+          backdropFilter: "blur(3px)", zIndex: 1
+        }}></div>
+
+        {/* Content */}
+        <div style={{ maxWidth: "900px", zIndex: 2, position: "relative" }}>
+          <div style={{ marginBottom: "32px" }}>
+            <h2 style={{ fontSize: "68px", fontWeight: "900", color: "#ffffff", margin: "0 0 24px", lineHeight: "1.1", letterSpacing: "-1px" }}>
+              Report Missing.<br/>AI Detects Instantly.<br/><span style={{ background: "linear-gradient(135deg, #ff6464, #ff8a80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reunite Lives.</span>
+            </h2>
+            <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.8)", margin: "0", lineHeight: "1.7", maxWidth: "700px", fontWeight: "500" }}>
+              File a report. Our AI scans every CCTV camera on campus in real-time. Get instant alerts when matches are found. Because when someone goes missing, every second counts.
+            </p>
+          </div>
+          <button
+            onClick={onFileReport}
+            style={{
+              padding: "14px 36px", background: "#ef4444", border: "none",
+              borderRadius: "8px", color: "#ffffff", fontWeight: "700", fontSize: "16px", cursor: "pointer",
+              fontFamily: "inherit", boxShadow: "0 10px 25px rgba(239,68,68,0.3)", transition: "all 0.3s ease"
+            }}
+            onMouseOver={(e) => { e.target.style.background = "#dc2626"; e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 15px 35px rgba(239,68,68,0.4)"; }}
+            onMouseOut={(e) => { e.target.style.background = "#ef4444"; e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 10px 25px rgba(239,68,68,0.3)"; }}
+          >
+            File a Missing Person Report
+          </button>
+        </div>
+      </div>
+
+      {/* How ResQ Works Section */}
+      <div style={{ background: "linear-gradient(180deg, rgba(15,32,64,0.6) 0%, rgba(10,22,40,0.9) 100%)", padding: "80px 24px", textAlign: "center", position: "relative", zIndex: 2, borderTop: "1px solid rgba(26,86,219,0.2)" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <h3 style={{ fontSize: "48px", fontWeight: "900", color: "#ffffff", margin: "0 0 16px" }}>
+            Let's Get Your Peace <span style={{ background: "linear-gradient(135deg, #ff6464, #ff8a80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Of Mind</span> Back
+          </h3>
+          <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.75)", maxWidth: "800px", margin: "0 auto 60px", lineHeight: "1.8" }}>
+            ResQ is an AI-powered campus surveillance system designed to identify and locate missing individuals using advanced face recognition and CCTV analysis. Our intelligent detection pipeline narrows down search areas using geofencing, analyzes camera feeds, and instantly alerts administrators — helping locate missing persons faster and more efficiently.
+          </p>
+
+          <h4 style={{ fontSize: "36px", fontWeight: "900", color: "#ffffff", margin: "60px 0 48px" }}>
+            3 Easy Steps to Activate ResQ
+          </h4>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "32px" }}>
+            {[
+              { num: "1", title: "File a Report", desc: "Upload the missing person's photo and last seen location.", icon: "📋", color: "#1a56db" },
+              { num: "2", title: "AI Scans Campus", desc: "ResQ analyzes CCTV footage within the geofenced zone.", icon: "🤖", color: "#0891b2" },
+              { num: "3", title: "Get Real-Time Updates", desc: "Receive alerts if the person is detected anywhere on campus.", icon: "🔔", color: "#ff6464" }
+            ].map((step, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(26,173,178,0.3)",
+                  borderRadius: "14px", padding: "36px 28px", backdropFilter: "blur(10px)",
+                  transition: "all 0.3s"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "rgba(26,86,219,0.2)";
+                  e.currentTarget.style.borderColor = "rgba(26,86,219,0.6)";
+                  e.currentTarget.style.transform = "translateY(-8px)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.borderColor = "rgba(26,173,178,0.3)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <div style={{ fontSize: "40px", margin: "0 0 12px" }}>{step.icon}</div>
+                <div style={{
+                  width: "64px", height: "64px", background: `linear-gradient(135deg, ${step.color}, ${step.color}dd)`,
+                  borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "32px", fontWeight: "900", color: "#ffffff", margin: "0 auto 20px"
+                }}>
+                  {step.num}
+                </div>
+                <h5 style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff", margin: "0 0 12px" }}>{step.title}</h5>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", margin: 0, lineHeight: "1.6" }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div style={{ background: "linear-gradient(135deg, rgba(26,86,219,0.2) 0%, rgba(8,145,178,0.2) 100%)", padding: "60px 24px", textAlign: "center", borderTop: "1px solid rgba(26,86,219,0.3)", position: "relative", zIndex: 2 }}>
+        <h4 style={{ fontSize: "32px", fontWeight: "900", color: "#ffffff", margin: "0 0 20px" }}>
+          Ready to Help Find Someone?
+        </h4>
+        <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.8)", maxWidth: "600px", margin: "0 auto 28px" }}>
+          Every report helps. File a missing person report today and let our AI-powered system assist in the search.
+        </p>
+        <button
+          onClick={onFileReport}
+          style={{
+            padding: "14px 40px", background: "linear-gradient(135deg, #1a56db, #0891b2)", border: "none",
+            borderRadius: "10px", color: "#ffffff", fontWeight: "800", fontSize: "14px", cursor: "pointer",
+            fontFamily: "inherit", boxShadow: "0 6px 20px rgba(26,86,219,0.35)", transition: "all 0.25s"
+          }}
+          onMouseOver={(e) => { e.target.style.transform = "scale(1.05)"; }}
+          onMouseOut={(e) => { e.target.style.transform = "scale(1)"; }}
+        >
+          File Missing Person Report
+        </button>
+      </div>
+
+      {/* Footer */}
+      <footer style={{ background: C.navy, padding: "40px 24px", position: "relative", zIndex: 2, borderTop: "1px solid #1e293b" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", textAlign: "center", paddingTop: "20px" }}>
+          <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>ResQ © 2026. AI-powered missing person tracking for campus safety.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
 // ── SUBMIT FORM — defined OUTSIDE App ──────────────────────
 function SubmitView({ formData, setFormData, onSubmit, onEmailSearch, onViewDetails, searchEmail, setSearchEmail, searchRefId, setSearchRefId, loading, error }) {
@@ -77,30 +230,31 @@ function SubmitView({ formData, setFormData, onSubmit, onEmailSearch, onViewDeta
   };
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px 24px", display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px", alignItems: "start" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0a1628 0%, #0f2040 100%)", fontFamily: "'Segoe UI', system-ui, sans-serif", paddingBottom: "60px", paddingTop: "40px" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px", alignItems: "start" }}>
 
       {/* Main Form */}
-      <div style={S.card}>
-        <div style={{ padding: "22px 28px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ width: "40px", height: "40px", background: "linear-gradient(135deg,#1a56db,#0891b2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>🔍</div>
+      <div style={{ ...S.card, background: "rgba(15, 32, 64, 0.8)", backdropFilter: "blur(10px)", border: "1px solid rgba(26,86,219,0.2)", boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 1px rgba(26,86,219,0.1)" }}>
+        <div style={{ background: "linear-gradient(135deg, #ff6464 0%, #ff8a80 100%)", padding: "28px 32px", display: "flex", alignItems: "center", gap: "16px", color: "#ffffff", borderRadius: "12px 12px 0 0" }}>
+          <div style={{ width: "48px", height: "48px", background: "rgba(255,255,255,0.2)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>📝</div>
           <div>
-            <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: C.text }}>Report a Missing Person</h2>
-            <p style={{ margin: 0, color: C.muted, fontSize: "13px" }}>Provide accurate information to speed up the search</p>
+            <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff" }}>Report Missing Person</h2>
+            <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,0.9)", fontSize: "14px" }}>Fast, accurate, and secure reporting</p>
           </div>
         </div>
 
-        <form onSubmit={onSubmit} style={{ padding: "24px 28px" }}>
+        <form onSubmit={onSubmit} style={{ padding: "32px 36px" }}>
           {/* Photo */}
           <Field label="PHOTOGRAPH *">
             <input type="file" accept="image/*" onChange={handlePhoto} required id="photo-up" style={{ display: "none" }} />
-            <label htmlFor="photo-up" style={{ display: "flex", alignItems: "center", gap: "16px", padding: "14px 18px", border: "2px dashed #cbd5e1", borderRadius: "10px", cursor: "pointer", background: "#f8fafc" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "10px", overflow: "hidden", background: "#e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <label htmlFor="photo-up" style={{ display: "flex", alignItems: "center", gap: "16px", padding: "16px 20px", border: "2px dashed rgba(26,86,219,0.5)", borderRadius: "10px", cursor: "pointer", background: "rgba(26,86,219,0.05)", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.background = "rgba(26,86,219,0.1)"; e.currentTarget.style.borderColor = "rgba(26,86,219,0.8)"; }} onMouseOut={(e) => { e.currentTarget.style.background = "rgba(26,86,219,0.05)"; e.currentTarget.style.borderColor = "rgba(26,86,219,0.5)"; }}>
+              <div style={{ width: "72px", height: "72px", borderRadius: "10px", overflow: "hidden", background: "rgba(26,86,219,0.1)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(26,86,219,0.2)" }}>
                 {formData.photoPreview
                   ? <img src={formData.photoPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="preview" />
-                  : <span style={{ fontSize: "24px" }}>📷</span>}
+                  : <span style={{ fontSize: "28px" }}>📷</span>}
               </div>
               <div>
-                <p style={{ margin: "0 0 2px", color: formData.photo ? C.text : C.blue, fontWeight: "600", fontSize: "14px" }}>
+                <p style={{ margin: "0 0 4px", color: "#e0e7ff", fontWeight: "700", fontSize: "14px" }}>
                   {formData.photo ? formData.photo.name : "Click to upload photo"}
                 </p>
                 <p style={{ margin: 0, color: C.muted, fontSize: "12px" }}>PNG, JPG up to 10MB</p>
@@ -152,11 +306,14 @@ function SubmitView({ formData, setFormData, onSubmit, onEmailSearch, onViewDeta
           </Field>
 
           <Field label="LAST SEEN LOCATION *">
-            <input
-              type="text" value={formData.lastSeenLocation} onChange={handleField("lastSeenLocation")}
-              required placeholder="e.g. Main Building, Library, Cafeteria..."
-              style={S.inputEl} onFocus={focus} onBlur={blur}
-            />
+            <select
+              value={formData.lastSeenLocation} onChange={handleField("lastSeenLocation")}
+              required style={{ ...S.inputEl, cursor: "pointer" }}
+              onFocus={focus} onBlur={blur}>
+              <option value="">-- Select Campus Location --</option>
+              {CAMPUS_LOCATIONS.map(loc =>
+                <option key={loc.id} value={loc.name}>{loc.name}</option>)}
+            </select>
           </Field>
 
           <Field label="YOUR EMAIL ADDRESS *">
@@ -169,112 +326,126 @@ function SubmitView({ formData, setFormData, onSubmit, onEmailSearch, onViewDeta
 
           {/* Outsider toggle */}
           <div
-            style={{ display: "flex", alignItems: "center", gap: "12px", padding: "13px 16px", background: "#f8fafc", borderRadius: "8px", marginBottom: "20px", border: "1px solid #e2e8f0", cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "rgba(26,86,219,0.08)", borderRadius: "8px", marginBottom: "24px", border: "1px solid rgba(26,86,219,0.2)", cursor: "pointer", transition: "all 0.2s" }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "rgba(26,86,219,0.12)"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = "rgba(26,86,219,0.08)"; }}
             onClick={() => setFormData(p => ({ ...p, isOutsider: !p.isOutsider, department: !p.isOutsider ? "" : p.department }))}>
             <div style={{
               width: "18px", height: "18px", borderRadius: "4px",
-              border: `2px solid ${formData.isOutsider ? C.blue : "#cbd5e1"}`,
-              background: formData.isOutsider ? C.blue : "#fff",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              border: `2px solid ${formData.isOutsider ? "#ff6464" : "rgba(26,86,219,0.4)"}`,
+              background: formData.isOutsider ? "#ff6464" : "transparent",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s",
             }}>
-              {formData.isOutsider && <span style={{ color: "#fff", fontSize: "11px" }}>✓</span>}
+              {formData.isOutsider && <span style={{ color: "#fff", fontSize: "11px", fontWeight: "bold" }}>✓</span>}
             </div>
             <div>
-              <p style={{ margin: 0, color: C.text, fontSize: "13px", fontWeight: "600" }}>Person is not affiliated with this institution</p>
-              <p style={{ margin: 0, color: C.muted, fontSize: "12px" }}>Outsider — department not required</p>
+              <p style={{ margin: 0, color: "#e0e7ff", fontSize: "13px", fontWeight: "700" }}>Not affiliated with this institution</p>
+              <p style={{ margin: 0, color: C.muted, fontSize: "12px" }}>No department required</p>
             </div>
           </div>
 
           {error && (
-            <div style={{ padding: "11px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", color: "#dc2626", fontSize: "13px", marginBottom: "16px" }}>
+            <div style={{ padding: "14px 18px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: "8px", color: "#fecaca", fontSize: "13px", marginBottom: "20px", fontWeight: "600" }}>
               ⚠️ {error}
             </div>
           )}
 
-          <button type="submit" disabled={loading} style={{ ...S.btn, opacity: loading ? 0.7 : 1 }}>
-            {loading ? "⏳ Submitting Report..." : "Submit Missing Person Report →"}
+          <button 
+            type="submit" 
+            disabled={loading} 
+            style={{ ...S.btn, opacity: loading ? 0.6 : 1 }}
+            onMouseOver={(e) => { if (!loading) { e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 12px 32px rgba(255,100,100,0.4)"; } }}
+            onMouseOut={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 8px 24px rgba(255,100,100,0.3)"; }}
+          >
+            {loading ? "⏳ Submitting..." : "Submit Report"}
           </button>
         </form>
       </div>
 
       {/* Sidebar */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
         {/* Find by email */}
-        <div style={S.card}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", background: "#fafbfc" }}>
-            <h3 style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: C.text }}>📧 Find Your Reports</h3>
-            <p style={{ margin: "2px 0 0", color: C.muted, fontSize: "12px" }}>Retrieve Reference IDs by email</p>
+        <div style={{ ...S.card }}>
+          <div style={{ padding: "18px 24px", background: "linear-gradient(135deg, rgba(8,145,178,0.15) 0%, rgba(26,86,219,0.15) 100%)", borderBottom: "1px solid rgba(26,86,219,0.2)" }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#e0e7ff" }}>📧 Find Reports</h3>
+            <p style={{ margin: "4px 0 0", color: C.muted, fontSize: "12px" }}>By your email</p>
           </div>
-          <form onSubmit={onEmailSearch} style={{ padding: "16px 20px" }}>
+          <form onSubmit={onEmailSearch} style={{ padding: "20px 24px" }}>
             <Field label="EMAIL ADDRESS">
               <input type="email" value={searchEmail} onChange={e => setSearchEmail(e.target.value)}
                 required placeholder="your.email@institution.edu"
-                style={S.inputEl} onFocus={focus} onBlur={blur} />
+                style={{ ...S.inputEl, color: "#ffffff", "::placeholder": { color: "#64748b" } }}
+                onFocus={(e) => { e.target.style.background = "rgba(30, 41, 59, 0.9)"; e.target.style.borderColor = "rgba(26,86,219,0.5)"; }}
+                onBlur={(e) => { e.target.style.background = "rgba(30, 41, 59, 0.7)"; e.target.style.borderColor = "rgba(26,86,219,0.2)"; }}
+              />
             </Field>
-            <button type="submit" disabled={loading} style={S.btnOutline}>
-              {loading ? "Searching..." : "Get Reference IDs"}
+            <button type="submit" disabled={loading} style={{ ...S.btn, background: "linear-gradient(135deg, #0891b2, #06b6d4)" }} onMouseOver={(e) => { e.target.style.transform = "translateY(-2px)"; }} onMouseOut={(e) => { e.target.style.transform = "translateY(0)"; }}>
+              {loading ? "Searching..." : "Get IDs"}
             </button>
           </form>
         </div>
 
         {/* Track by ref ID */}
-        <div style={S.card}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", background: "#fafbfc" }}>
-            <h3 style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: C.text }}>🔎 Track Report Status</h3>
-            <p style={{ margin: "2px 0 0", color: C.muted, fontSize: "12px" }}>View details by Reference ID</p>
+        <div style={{ ...S.card }}>
+          <div style={{ padding: "18px 24px", background: "linear-gradient(135deg, rgba(26,86,219,0.15) 0%, rgba(8,145,178,0.15) 100%)", borderBottom: "1px solid rgba(26,86,219,0.2)" }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#e0e7ff" }}>🔎 Track Status</h3>
+            <p style={{ margin: "4px 0 0", color: C.muted, fontSize: "12px" }}>By Reference ID</p>
           </div>
-          <form onSubmit={onViewDetails} style={{ padding: "16px 20px" }}>
+          <form onSubmit={onViewDetails} style={{ padding: "20px 24px" }}>
             <Field label="REFERENCE ID">
               <input value={searchRefId} onChange={e => setSearchRefId(e.target.value)}
-                required placeholder="Paste your Reference ID"
-                style={{ ...S.inputEl, fontFamily: "monospace", fontSize: "13px" }}
-                onFocus={focus} onBlur={blur} />
+                required placeholder="Paste Reference ID"
+                style={{ ...S.inputEl, fontFamily: "monospace", fontSize: "13px", color: "#ffffff" }}
+                onFocus={(e) => { e.target.style.background = "rgba(30, 41, 59, 0.9)"; e.target.style.borderColor = "rgba(26,86,219,0.5)"; }}
+                onBlur={(e) => { e.target.style.background = "rgba(30, 41, 59, 0.7)"; e.target.style.borderColor = "rgba(26,86,219,0.2)"; }}
+              />
             </Field>
-            <button type="submit" disabled={loading} style={S.btn}>
+            <button type="submit" disabled={loading} style={S.btn} onMouseOver={(e) => { e.target.style.transform = "translateY(-2px)"; }} onMouseOut={(e) => { e.target.style.transform = "translateY(0)"; }}>
               {loading ? "Loading..." : "View Details"}
             </button>
           </form>
         </div>
 
         {/* How it works */}
-        <div style={S.card}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", background: "#fafbfc" }}>
-            <h3 style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: C.text }}>ℹ️ How It Works</h3>
+        <div style={{ ...S.card }}>
+          <div style={{ padding: "18px 24px", background: "linear-gradient(135deg, rgba(255,100,100,0.15) 0%, rgba(255,138,128,0.15) 100%)", borderBottom: "1px solid rgba(255,100,100,0.2)" }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#fecaca" }}>ℹ️ How It Works</h3>
           </div>
-          <div style={{ padding: "14px 20px" }}>
+          <div style={{ padding: "20px 24px" }}>
             {[
-              ["1", "Submit a report with a clear photo"],
-              ["2", "Receive a unique Reference ID by entering the email you used to submit the report (keep this ID safe)"],
-              ["3", "AI scans CCTV footage automatically"],
-              ["4", "Get notified when person is located"],
+              ["1", "Submit report with photo"],
+              ["2", "Get Reference ID via email"],
+              ["3", "AI scans campus CCTV"],
+              ["4", "Real-time alerts sent"],
             ].map(([n, txt]) => (
-              <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "10px" }}>
-                <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "linear-gradient(135deg,#1a56db,#0891b2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ color: "#fff", fontSize: "11px", fontWeight: "800" }}>{n}</span>
+              <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "linear-gradient(135deg, #ff6464, #ff8a80)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(255,100,100,0.3)" }}>
+                  <span style={{ color: "#fff", fontSize: "12px", fontWeight: "900" }}>{n}</span>
                 </div>
-                <p style={{ margin: 0, color: C.textSub, fontSize: "12.5px", paddingTop: "3px" }}>{txt}</p>
+                <p style={{ margin: 0, color: C.textSub, fontSize: "13px", paddingTop: "2px", lineHeight: "1.4" }}>{txt}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Emergency */}
-        <div style={{ background: "#fff5f5", borderRadius: "12px", border: "1px solid #fecaca", overflow: "hidden" }}>
-          <div style={{ padding: "10px 20px", background: "#b91c1c", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "13px" }}>🚨</span>
-            <h3 style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#fff", letterSpacing: "0.05em" }}>EMERGENCY CONTACTS</h3>
+        <div style={{ ...S.card, background: "linear-gradient(135deg, rgba(220,38,38,0.15), rgba(239,68,68,0.1))", border: "1.5px solid rgba(239,68,68,0.4)" }}>
+          <div style={{ padding: "14px 20px", background: "rgba(239,68,68,0.2)", display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid rgba(239,68,68,0.3)" }}>
+            <span style={{ fontSize: "16px" }}>🚨</span>
+            <h3 style={{ margin: 0, fontSize: "13px", fontWeight: "800", color: "#fecaca", letterSpacing: "0.08em" }}>EMERGENCY</h3>
           </div>
-          <div style={{ padding: "12px 20px" }}>
-            {[["Campus Security", "+91 9876543210"], ["Police Helpline", "100"], ["Admin Office", "+91 9876543211"]].map(([label, num]) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px" }}>
-                <span style={{ color: "#64748b", fontSize: "12px" }}>{label}</span>
-                <span style={{ color: "#b91c1c", fontWeight: "700", fontSize: "13px", fontFamily: "monospace" }}>{num}</span>
+          <div style={{ padding: "16px 20px" }}>
+            {[["Campus Security", "+91 9876543210"], ["Police", "100"], ["Admin", "+91 9876543211"]].map(([label, num]) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                <span style={{ color: C.textSub, fontSize: "13px" }}>{label}</span>
+                <span style={{ color: "#ff8a80", fontWeight: "800", fontSize: "13px", fontFamily: "monospace" }}>{num}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -353,19 +524,19 @@ function DetailsView({ submittedData, statusData, onCheckStatus, onBack, loading
                 <div key={i} style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 14px", marginBottom: "10px" }}>
                   <p style={{ margin: "0 0 2px", color: "#15803d", fontWeight: "700", fontSize: "13px" }}>📍 {loc.location}</p>
                   <p style={{ margin: "0 0 2px", color: C.muted, fontSize: "12px" }}>🕒 {new Date(loc.timestamp).toLocaleString()}</p>
-                  <p style={{ margin: "0 0 8px", color: C.muted, fontSize: "12px" }}>Confidence: {(loc.confidence * 100).toFixed(1)}%</p>
-                  {(loc.snapshot || loc.face_crop) && (
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                      {loc.face_crop && (
-                        <div style={{ flex: "0 0 auto" }}>
-                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>FACE DETECTED</p>
-                          <img src={loc.face_crop} alt="Face crop" style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "2px solid #f59e0b" }} />
+                  <p style={{ margin: "0 0 8px", color: C.muted, fontSize: "12px" }}>Confidence: {(loc.confidence).toFixed(1)}%</p>
+                  {(loc.face_b64 || loc.face_crop || loc.frame_b64 || loc.snapshot) && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                      {(loc.frame_b64 || loc.snapshot) && (
+                        <div>
+                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>🎥 CCTV FRAME</p>
+                          <img src={loc.frame_b64 || loc.snapshot} alt="CCTV frame" style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "8px", border: "2px solid #22c55e", background: "#f1f5f9" }} />
                         </div>
                       )}
-                      {loc.snapshot && (
-                        <div style={{ flex: 1, minWidth: "150px" }}>
-                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>CCTV FRAME</p>
-                          <img src={loc.snapshot} alt="CCTV snapshot" style={{ width: "100%", maxHeight: "180px", objectFit: "contain", borderRadius: "8px", border: "2px solid #22c55e", background: "#f1f5f9" }} />
+                      {(loc.face_b64 || loc.face_crop) && (
+                        <div>
+                          <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em" }}>👤 DETECTED FACE</p>
+                          <img src={loc.face_b64 || loc.face_crop} alt="Detected face" style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "8px", border: "2px solid #f59e0b", background: "#f1f5f9" }} />
                         </div>
                       )}
                     </div>
@@ -384,7 +555,7 @@ function DetailsView({ submittedData, statusData, onCheckStatus, onBack, loading
 
 // ── MAIN APP ───────────────────────────────────────────────
 export default function App() {
-  const [view, setView]           = useState("submit");
+  const [view, setView]           = useState("home");
   const [formData, setFormData]   = useState({ name: "", studentId: "", dressCode: "", department: "", isOutsider: false, lastSeenLocation: "", submitterEmail: "", photo: null, photoPreview: null });
   const [searchEmail, setSearchEmail] = useState("");
   const [searchRefId, setSearchRefId] = useState("");
@@ -433,8 +604,11 @@ export default function App() {
       if (!res.ok) res = await fetch(`${API}/check-status/${encodeURIComponent(searchRefId.trim())}/`);
       const data = await res.json();
       if (res.ok) { setSubmittedData(data); setStatusData(null); setView("details"); }
-      else setError("Reference ID not found.");
-    } catch { setError("Cannot connect to backend."); }
+      else setError(`Reference ID not found: ${data.error || "Unknown error"}`);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(`Cannot connect to backend: ${err.message}`);
+    }
     finally { setLoading(false); }
   };
 
@@ -444,12 +618,26 @@ export default function App() {
     try {
       const res = await fetch(`${API}/check-status/${encodeURIComponent(refId)}/`);
       const data = await res.json();
-      if (res.ok) setStatusData(data); else alert("Could not fetch status.");
-    } catch { alert("Cannot connect to backend."); }
+      console.log("✅ Status data received:", data);
+      console.log("Detected locations:", data.detected_locations);
+      if (data.detected_locations?.length > 0) {
+        console.log("First detection:", data.detected_locations[0]);
+        console.log("Has face_b64?", !!data.detected_locations[0].face_b64);
+      }
+      if (res.ok) {
+        setStatusData(data);
+      } else {
+        alert(`Error: ${data.error || "Could not fetch status"}`);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert(`Cannot connect to backend: ${err.message}`);
+    }
     finally { setLoading(false); }
   };
 
   const resetToSubmit = () => { setView("submit"); setSubmittedData(null); setStatusData(null); setError(""); };
+  const goToHome = () => { setView("home"); setSubmittedData(null); setStatusData(null); setError(""); };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f1f5f9", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
@@ -464,7 +652,7 @@ export default function App() {
       {/* Header */}
       <header style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px", height: "62px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={goToHome}>
             <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#1a56db,#0891b2)", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🔍</div>
             <div>
               <h1 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: C.navy }}>ResQ</h1>
@@ -484,15 +672,20 @@ export default function App() {
       </header>
 
       {/* Breadcrumb */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9" }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "10px 24px", display: "flex", gap: "6px", alignItems: "center" }}>
-          <span style={{ color: C.muted, fontSize: "12px" }}>Home</span>
-          <span style={{ color: "#cbd5e1" }}>›</span>
-          <span style={{ color: C.blue, fontSize: "12px", fontWeight: "600" }}>{view === "submit" ? "Submit Report" : "Report Details"}</span>
+      {view !== "home" && (
+        <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9" }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "10px 24px", display: "flex", gap: "6px", alignItems: "center" }}>
+            <span style={{ color: C.muted, fontSize: "12px", cursor: "pointer" }} onClick={goToHome}>Home</span>
+            <span style={{ color: "#cbd5e1" }}>›</span>
+            <span style={{ color: C.blue, fontSize: "12px", fontWeight: "600" }}>{view === "submit" ? "Submit Report" : "Report Details"}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
+      {view === "home" && (
+        <HomeView onFileReport={() => setView("submit")} />
+      )}
       {view === "submit" && (
         <SubmitView
           formData={formData} setFormData={setFormData}

@@ -1,6 +1,7 @@
 import os
 import cv2
 import random
+import base64
 import numpy as np
 from deepface import DeepFace
 from scipy.spatial.distance import cosine
@@ -300,12 +301,17 @@ def detect_person_in_video(missing_person, cctv_video):
                 os.makedirs(os.path.dirname(frame_path), exist_ok=True)
                 cv2.imwrite(frame_path, annotated)
 
-
                 face_file = f"detected_faces/face_{frame_no}.jpg"
                 face_path = os.path.join(settings.MEDIA_ROOT, face_file)
                 os.makedirs(os.path.dirname(face_path), exist_ok=True)
                 cv2.imwrite(face_path, face)
 
+                # Encode images as base64
+                _, frame_buf = cv2.imencode('.jpg', annotated)
+                frame_b64 = base64.b64encode(frame_buf).decode('utf-8')
+
+                _, face_buf = cv2.imencode('.jpg', face)
+                face_b64 = base64.b64encode(face_buf).decode('utf-8')
 
                 matches.append({
                     'matched_student_id': student_id,
@@ -314,6 +320,8 @@ def detect_person_in_video(missing_person, cctv_video):
                     'timestamp_seconds': frame_no / 25.0,
                     'frame_path': frame_file,
                     'face_path': face_file,
+                    'frame_b64': f'data:image/jpeg;base64,{frame_b64}',
+                    'face_b64': f'data:image/jpeg;base64,{face_b64}',
                 })
 
 

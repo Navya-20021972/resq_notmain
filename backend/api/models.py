@@ -28,7 +28,13 @@ class MissingPerson(models.Model):
     last_seen_location = models.CharField(max_length=200)
 
     is_outsider = models.BooleanField(default=False)
-    photo = models.ImageField(upload_to="missing_persons/")
+    photo = models.ImageField(upload_to="missing_persons/", blank=True, null=True)
+
+    # Location ID key from frontend dropdown (e.g. 'rb_lawn', 'canteen')
+    last_seen_location_id = models.CharField(max_length=100, blank=True, null=True)
+
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     matched_student = models.ForeignKey(
         'Student',
@@ -40,13 +46,28 @@ class MissingPerson(models.Model):
     email = models.EmailField()
     status = models.CharField(
         max_length=50,
+        choices=[
+            ("Pending Investigation", "Pending Investigation"),
+            ("Processing", "Processing"),
+            ("Detected", "Detected"),
+            ("Completed", "Completed"),
+        ],
         default="Pending Investigation"
     )
 
+    # Populated when status → Detected
+    found_location    = models.CharField(max_length=200, blank=True, null=True)
+    found_location_id = models.CharField(max_length=100, blank=True, null=True)
+    found_at          = models.DateTimeField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - {self.reference_id}"
+        return f"{self.name} — {self.status} ({self.reference_id})"
+
+    class Meta:
+        ordering = ["-created_at"]
 
 class CCTVVideo(models.Model):
     location = models.CharField(max_length=200)

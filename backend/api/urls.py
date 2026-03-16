@@ -10,7 +10,6 @@ from .views import (
     get_reference_by_email,
     get_report_by_reference,
     admin_dashboard,
-    # New views
     submit_missing_person,
     check_status,
     admin_get_reports,
@@ -20,6 +19,7 @@ from .views import (
     admin_get_students,
     admin_upload_cctv,
     admin_get_cctv_videos,
+    admin_delete_cctv,
     admin_run_detection,
     admin_get_detections,
 )
@@ -29,14 +29,15 @@ router.register(r"students", StudentViewSet)
 router.register(r"missing-persons", MissingPersonViewSet)
 
 urlpatterns = [
-    # ===== ADMIN AUTH =====
-    path("admin/login/", admin_login, name="admin-login"),
 
-    # ===== ADMIN ACTIONS =====
+    # ===== AUTH =====
+    path("admin/login/",                                        admin_login),
+
+    # ===== LEGACY =====
     path("cctv/<int:video_id>/process/",                        process_cctv_video),
     path("detect/<int:missing_person_id>/<int:video_id>/",      run_face_detection),
 
-    # ===== USER SIDE =====
+    # ===== USER =====
     path("submit-missing-person/",                              submit_missing_person),
     path("get-reference-by-email/<str:email>/",                 get_reference_by_email),
     path("reports/<uuid:reference_id>/",                        get_report_by_reference),
@@ -46,22 +47,28 @@ urlpatterns = [
     path("admin/dashboard/",                                    admin_dashboard),
     path("admin/dashboard-stats/",                              admin_dashboard_stats),
 
-    # ===== ADMIN REPORTS =====
+    # ===== REPORTS =====
     path("admin/get-reports/",                                  admin_get_reports),
     path("admin/update-status/<str:reference_id>/",             admin_update_status),
+    path("admin/update-report-status/",                         admin_update_status),
 
-    # ===== ADMIN STUDENTS =====
+    # ===== STUDENTS =====
     path("admin/add-student/",                                  admin_add_student),
     path("admin/get-students/",                                 admin_get_students),
 
-    # ===== ADMIN CCTV =====
+    # ===== CCTV =====
     path("admin/cctv/upload/",                                  admin_upload_cctv),
+    path("admin/upload-cctv/",                                  admin_upload_cctv),
     path("admin/get-cctv-videos/",                              admin_get_cctv_videos),
+    path("admin/delete-cctv/<int:video_id>/",                   admin_delete_cctv),
 
     # ===== DETECTION =====
-    path("admin/process-detection/<uuid:reference_id>/", admin_run_detection),
-    path("admin/run-detection/<uuid:reference_id>/", admin_run_detection),
-    path("admin/detections/", admin_get_detections),
+    # This is what UploadCCTV.jsx calls:  POST /api/admin/run-detection/
+    # body: { report_id: "uuid", video_id: 2 }
+    path("admin/run-detection/",                                admin_run_detection),
+    path("admin/run-detection/<str:reference_id>/",             admin_run_detection),
+    path("admin/process-detection/<str:reference_id>/",         admin_run_detection),
+    path("admin/detections/",                                   admin_get_detections),
 
     # ===== VIEWSETS =====
     path("", include(router.urls)),
